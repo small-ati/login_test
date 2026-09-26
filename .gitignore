@@ -1,0 +1,6 @@
+test_login.py
+__pycache__/
+.venv/
+.pytest_cache/
+.idea/
+msedgedriver.exe
