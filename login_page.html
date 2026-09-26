@@ -12,7 +12,12 @@
 
     <label for="password">密码：</label>
     <input type="password" id="password" placeholder="请输入密码"><br><br>
-
+    <lable><Input type="checkbox" id="remember"> 记住我</label><br><br>
+    <label for ="login-type">登录方式：</label>
+    <select id="login-type">
+        <option value="password">密码登录</option>
+        <option value="sms">短信登录</option>
+    </select><br><br>
     <button id="login-btn" onclick="login()">登录</button>
 
     <div id="message"></div>
