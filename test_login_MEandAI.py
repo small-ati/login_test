@@ -17,51 +17,25 @@ def driver(request):
     yield driver
     driver.quit()
 LOGIN_URL = 'file:///D:/python学习/第二个项目/login_page.html'
-def test_login_success(driver):
+login_data = [('admin','123456','登录成功'),
+              ('admin','wrong','用户名或密码错误'),
+              ('','123456','请输入用户名和密码'),
+              ]
+@pytest.mark.parametrize("username_input,password_input,expected_msg",login_data)
+def test_login_scenarios(driver,username_input,password_input,expected_msg):
+    """数据驱动：一次测试多种登录场景"""
     driver.get(LOGIN_URL)
     wait = WebDriverWait(driver,10)
     username = wait.until(EC.presence_of_element_located((By.ID,'username')))
-    assert username is not None ,'未找到账号框'
     username.clear()
-    username.send_keys('admin')
-    password = wait.until(EC.presence_of_element_located((By.ID,'password')))
-    assert password is not None ,'未找到密码框'
+    username.send_keys(username_input)
+    password = driver.find_element(By.ID,'password')
     password.clear()
-    password.send_keys('123456')
-    login_btn = wait.until(EC.element_to_be_clickable((By.ID,'login-btn')))
-    assert login_btn is not None ,'未找到登录按钮'
-    login_btn.click()
-    wait.until(EC.text_to_be_present_in_element((By.ID,'message'),'登录成功'))
-    message = message = driver.find_element(By.ID,'message')
-    assert message.text == '登录成功' ,f'提示文字出错：{message.text}'
-def test_login_wrong_password(driver):
-    driver.get(LOGIN_URL)
-    wait = WebDriverWait(driver,10)
-    username = wait.until(EC.presence_of_element_located((By.ID,'username')))
-    assert username is not None ,'未找到账号框'
-    username.clear()
-    username.send_keys('admin')
-    password = wait.until(EC.presence_of_element_located((By.ID,'password')))
-    assert password is not None ,'未找到密码框'
-    password.clear()
-    password.send_keys('wrong')
-    login_btn = wait.until(EC.element_to_be_clickable((By.ID,'login-btn')))
-    assert login_btn is not None ,'未找到登录按钮'
-    login_btn.click()
-    wait.until(EC.text_to_be_present_in_element((By.ID,'message'),'用户名或密码错误'))
-    message = driver.find_element(By.ID,'message')
-    assert message.text == '用户名或密码错误' ,f'提示文字出错：{message.text}'
-def test_login_empty_username(driver):
-    driver.get(LOGIN_URL)
-    wait = WebDriverWait(driver,10)
-    password = wait.until(EC.presence_of_element_located((By.ID,'password')))
-    password.clear()
-    password.send_keys('123456')
-    login_btn = wait.until(EC.element_to_be_clickable((By.ID,'login-btn')))
-    login_btn.click()
-    wait.until(EC.text_to_be_present_in_element((By.ID,'message'),'请输入用户名和密码'))
+    password.send_keys(password_input)
+    driver.find_element(By.ID,'login-btn').click()
+    wait.until(EC.text_to_be_present_in_element((By.ID,'message'),expected_msg))
     message = driver.find_element(By.ID,'message').text
-    assert message == '请输入用户名和密码',f'提示词出错：{message}'
+    assert message == expected_msg,f'提示文字不符：期望{expected_msg},实际{message}'
 def test_remenber_checkbox(driver):
     driver.get(LOGIN_URL)
     wait = WebDriverWait(driver,10)
@@ -75,3 +49,34 @@ def test_login_type_dropdown(driver):
     select = Select(dropdown)
     select.select_by_visible_text("短信登录")
     assert select.first_selected_option.text == '短信登录','下拉框选择失败'
+def test_gender_radio(driver):
+    driver.get(LOGIN_URL)
+    wait = WebDriverWait(driver,10)
+    female_radio = wait.until(EC.element_to_be_clickable((By.ID,'gender-female')))
+    female_radio.click()
+    assert female_radio.is_selected(),'女性单选框未被选中'
+    male_radio = driver.find_element(By.ID,'gender-male')
+    assert not male_radio.is_selected(),'男性单选框不应该被选中'
+def test_error_message_color(driver):
+    '''验证错误提示的文字颜色是红色'''
+    driver.get(LOGIN_URL)
+    wait = WebDriverWait(driver,10)
+    wait.until(EC.presence_of_element_located((By.ID,'username'))).send_keys('admin')
+    driver.find_element(By.ID,'password').send_keys('wrong')
+    driver.find_element(By.ID,'login-btn').click()
+    wait.until(EC.text_to_be_present_in_element((By.ID,'message'), '用户名或密码错误'))
+    message = driver.find_element(By.ID,'message')
+    color = message.value_of_css_property('color')
+    assert color == 'rgba(255, 0, 0, 1)',f'颜色不对：{color}'
+def test_toggle_password(driver):
+    '''验证显示/隐藏密码功能'''
+    driver.get(LOGIN_URL)
+    wait = WebDriverWait(driver,10)
+    password = wait.until(EC.presence_of_element_located((By.ID,'password')))
+    toggle_btn =driver.find_element(By.ID,'toggle-pwd')
+    pwd_type_before = password.get_attribute('type')
+    assert pwd_type_before == 'password',f'初始类型不对：{pwd_type_before}'
+    toggle_btn.click()
+    pwd_type_after = password.get_attribute('type')
+    assert pwd_type_after == 'text',f'点击后类型错误：{pwd_type_after}'
+    assert toggle_btn.text == '隐藏密码',f'按钮文字不对:{toggle_btn.text}'
