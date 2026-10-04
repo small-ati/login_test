@@ -5,10 +5,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support.ui import Select
-from login_page_obj import LoginPage
+'''需求：验证账号、密码框是否存在、验证登录、账号密码错误、是否输入账号或者密码功能'''
+'''1先配置驱动器,2等待并验证账号密码框，3输入正确的账号密码验证功能，
+4输入错误的账号密码'''
 @pytest.fixture(params=['edge'])
 def driver(request):
-    '''配置驱动器'''
     driver_path = os.path.join(os.path.dirname(__file__),'msedgedriver.exe')
     service = Service(driver_path)
     driver = webdriver.Edge(service=service)
@@ -17,7 +18,6 @@ def driver(request):
     driver.quit()
 LOGIN_URL = 'file:///D:/python学习/第二个项目/login_page.html'
 def read_login_data():
-    '''获取csv数据'''
     data = []
     with open('login_data.csv','r',newline='',encoding='utf-8-sig')as f:
         reader = csv.reader(f)
@@ -29,22 +29,25 @@ login_data = read_login_data()
 @pytest.mark.parametrize("username_input,password_input,expected_msg",login_data)
 def test_login_scenarios(driver,username_input,password_input,expected_msg):
     """数据驱动：一次测试多种登录场景"""
-    login_page = LoginPage(driver)
-    login_page.open(LOGIN_URL)
-    login_page.enter_username(username_input)
-    login_page.enter_password(password_input)
-    login_page.click_login()
-    actual_msg = login_page.get_message()
-    assert actual_msg == expected_msg,f'提示文字不符：期望{expected_msg},实际{actual_msg}'
+    driver.get(LOGIN_URL)
+    wait = WebDriverWait(driver,10)
+    username = wait.until(EC.presence_of_element_located((By.ID,'username')))
+    username.clear()
+    username.send_keys(username_input)
+    password = driver.find_element(By.ID,'password')
+    password.clear()
+    password.send_keys(password_input)
+    driver.find_element(By.ID,'login-btn').click()
+    wait.until(EC.text_to_be_present_in_element((By.ID,'message'),expected_msg))
+    message = driver.find_element(By.ID,'message').text
+    assert message == expected_msg,f'提示文字不符：期望{expected_msg},实际{message}'
 def test_remenber_checkbox(driver):
-    '''复选框功能验证'''
     driver.get(LOGIN_URL)
     wait = WebDriverWait(driver,10)
     checkbox = wait.until(EC.element_to_be_clickable((By.ID,'remember')))
     checkbox.click()
     assert checkbox.is_selected(),"复选框未被选中"
 def test_login_type_dropdown(driver):
-    '''下拉框功能验证'''
     driver.get(LOGIN_URL)
     wait = WebDriverWait(driver,10)
     dropdown = wait.until(EC.presence_of_element_located((By.ID,'login-type')))
@@ -52,7 +55,6 @@ def test_login_type_dropdown(driver):
     select.select_by_visible_text("短信登录")
     assert select.first_selected_option.text == '短信登录','下拉框选择失败'
 def test_gender_radio(driver):
-    '''单选框功能验证'''
     driver.get(LOGIN_URL)
     wait = WebDriverWait(driver,10)
     female_radio = wait.until(EC.element_to_be_clickable((By.ID,'gender-female')))

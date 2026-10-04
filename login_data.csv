@@ -1,0 +1,4 @@
+username,password,expected_msg
+admin,123456,登录成功
+admin,wrong,用户名或密码错误
+,123456,请输入用户名和密码
